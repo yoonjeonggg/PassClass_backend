@@ -18,6 +18,7 @@ import app_programming_development.Class.user.entity.Users;
 import app_programming_development.Class.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -48,6 +50,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (BadCredentialsException e) {
+            log.warn("Login failed - password mismatch: userId={}", user.getId());
             throw new PasswordMismatchException();
         }
 
@@ -64,6 +67,7 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(refreshTokens);
 
+        log.info("User login: userId={}", user.getId());
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -85,6 +89,7 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+        log.info("New user registered: userId={}, role={}", user.getId(), user.getRole());
         return SignupResponse.from(user);
     }
 
@@ -115,6 +120,7 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(refreshTokens);
 
+        log.debug("Auto-login: userId={}", user.getId());
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
@@ -124,5 +130,6 @@ public class AuthService {
     public void logOut() {
         Users user = securityUtils.getCurrentUser();
         refreshTokenRepository.deleteByUser(user);
+        log.info("User logout: userId={}", user.getId());
     }
 }

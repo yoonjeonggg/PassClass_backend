@@ -16,12 +16,14 @@ import app_programming_development.Class.review.repository.ReviewRepository;
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -52,6 +54,8 @@ public class ReviewService {
                 .build();
 
         reviewRepository.save(review);
+        log.info("Review created: userId={}, lectureId={}, rating={}",
+                currentUser.getId(), lecture.getId(), request.getRating());
     }
 
     @Transactional
@@ -66,6 +70,7 @@ public class ReviewService {
 
         review.setRating(request.getRating());
         review.setContent(request.getContent());
+        log.info("Review updated: reviewId={}, userId={}", reviewId, currentUser.getId());
     }
 
     @Transactional(readOnly = true)

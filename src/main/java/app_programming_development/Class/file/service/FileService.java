@@ -11,6 +11,7 @@ import app_programming_development.Class.file.repository.FileRepository;
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileService {
@@ -66,6 +68,8 @@ public class FileService {
                 .contentType(file.getContentType())
                 .build());
 
+        log.info("File uploaded: fileId={}, originalName={}, size={}bytes, uploaderId={}",
+                savedFile.getId(), originalName, file.getSize(), uploader.getId());
         return FileResponse.from(savedFile);
     }
 
@@ -84,6 +88,7 @@ public class FileService {
         Path filePath = Paths.get(uploadDir).resolve(file.getStoredName());
         java.nio.file.Files.deleteIfExists(filePath);
         fileRepository.delete(file);
+        log.info("File deleted: fileId={}, storedName={}", fileId, file.getStoredName());
     }
 
     private void validateFile(MultipartFile file) {

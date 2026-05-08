@@ -1,15 +1,20 @@
 package app_programming_development.Class.global;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class TokenProvider {
 
@@ -61,9 +66,16 @@ public class TokenProvider {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            log.debug("JWT expired: {}", e.getMessage());
+        } catch (SignatureException e) {
+            log.debug("Invalid JWT signature: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.debug("Malformed JWT: {}", e.getMessage());
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            log.debug("JWT validation failed: {}", e.getMessage());
         }
+        return false;
     }
 
 

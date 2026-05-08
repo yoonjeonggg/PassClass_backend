@@ -11,9 +11,11 @@ import app_programming_development.Class.notification.service.NotificationServic
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LikeService {
@@ -33,6 +35,7 @@ public class LikeService {
 
         if (alreadyLiked) {
             lectureLikeRepository.deleteByUser_IdAndLectures_Id(currentUser.getId(), lectureId);
+            log.info("Lecture unliked: userId={}, lectureId={}", currentUser.getId(), lectureId);
             return LikeResponse.builder().isLiked(false).build();
         } else {
             LectureLikes like = LectureLikes.builder()
@@ -45,6 +48,7 @@ public class LikeService {
                     NotificationType.LECTURE_LIKED,
                     lecture.getTitle() + " 강의에 새로운 좋아요가 추가되었습니다."
             );
+            log.info("Lecture liked: userId={}, lectureId={}", currentUser.getId(), lectureId);
             return LikeResponse.builder().isLiked(true).build();
         }
     }

@@ -17,11 +17,13 @@ import app_programming_development.Class.notification.service.NotificationServic
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LectureChapterService {
@@ -61,6 +63,8 @@ public class LectureChapterService {
             );
         }
 
+        log.info("Chapter created: chapterId={}, lectureId={}, instructorId={}, notified={} students",
+                chapter.getId(), request.getLectureId(), currentUser.getId(), enrollments.size());
         return LectureChapterResponse.from(chapter);
     }
 
@@ -79,6 +83,7 @@ public class LectureChapterService {
         chapter.setVideoUrl(request.getVideoUrl());
         chapter.setChapterOrder(request.getChapterOrder());
 
+        log.info("Chapter updated: chapterId={}, instructorId={}", chapterId, currentUser.getId());
         return LectureChapterResponse.from(chapter);
     }
 
@@ -94,6 +99,7 @@ public class LectureChapterService {
                 .orElseThrow(ChapterNotFoundException::new);
 
         lectureChapterRepository.delete(chapter);
+        log.info("Chapter deleted: chapterId={}, instructorId={}", chapterId, currentUser.getId());
     }
 
     @Transactional(readOnly = true)

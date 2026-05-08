@@ -11,11 +11,13 @@ import app_programming_development.Class.lecture.repository.LectureRepository;
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EnrollmentService {
@@ -41,6 +43,7 @@ public class EnrollmentService {
                 .build();
 
         enrollmentRepository.save(enrollment);
+        log.info("Enrollment created: userId={}, lectureId={}", currentUser.getId(), lectureId);
         return EnrollmentResponse.from(enrollment);
     }
 
@@ -53,6 +56,7 @@ public class EnrollmentService {
                 .orElseThrow(EnrollmentNotFoundException::new);
 
         enrollmentRepository.delete(enrollment);
+        log.info("Enrollment cancelled: userId={}, lectureId={}", currentUser.getId(), lectureId);
     }
 
     @Transactional(readOnly = true)

@@ -13,12 +13,14 @@ import app_programming_development.Class.exceptions.notFound.ChapterNotFoundExce
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChapterWatchService {
@@ -75,6 +77,8 @@ public class ChapterWatchService {
                 ));
 
         progress.updateWatchedSeconds(watchedSeconds);
+        log.debug("Progress saved: userId={}, chapterId={}, watchedSeconds={}",
+                currentUser.getId(), chapterId, watchedSeconds);
     }
 
     @Transactional(readOnly = true)
@@ -118,5 +122,6 @@ public class ChapterWatchService {
                 ));
 
         progress.markCompleted();
+        log.info("Chapter completed: userId={}, chapterId={}", currentUser.getId(), chapterId);
     }
 }

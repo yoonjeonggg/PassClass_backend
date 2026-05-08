@@ -9,8 +9,10 @@ import app_programming_development.Class.user.entity.Users;
 import app_programming_development.Class.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -34,6 +36,7 @@ public class UserService {
         user.setNickname(request.getNickname());
         user.setProfileUrl(request.getProfileImage());
         userRepository.save(user);
+        log.info("Profile updated: userId={}", user.getId());
         return MyProfileResponse.from(user);
     }
 }

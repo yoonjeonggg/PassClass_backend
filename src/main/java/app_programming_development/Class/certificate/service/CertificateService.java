@@ -10,12 +10,14 @@ import app_programming_development.Class.exceptions.notFound.CertificateNotFound
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CertificateService {
@@ -38,6 +40,8 @@ public class CertificateService {
 
         certificateRepository.save(certificate);
 
+        log.info("[ADMIN] Certificate created: certificateId={}, name={}, adminId={}",
+                certificate.getId(), certificate.getName(), currentUser.getId());
         return CertificateResponse.from(certificate);
     }
 
@@ -71,6 +75,7 @@ public class CertificateService {
         certificate.setName(request.getName());
         certificate.setDescription(request.getDescription());
 
+        log.info("[ADMIN] Certificate updated: certificateId={}, adminId={}", id, currentUser.getId());
         return CertificateResponse.from(certificate);
     }
 
@@ -86,5 +91,6 @@ public class CertificateService {
                 .orElseThrow(CertificateNotFoundException::new);
 
         certificateRepository.delete(certificate);
+        log.info("[ADMIN] Certificate deleted: certificateId={}, adminId={}", id, currentUser.getId());
     }
 }

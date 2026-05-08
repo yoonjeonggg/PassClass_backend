@@ -27,6 +27,7 @@ import app_programming_development.Class.user.entity.Users;
 import app_programming_development.Class.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -72,6 +74,8 @@ public class LectureService {
 
         lectureRepository.save(lecture);
 
+        log.info("Lecture created: lectureId={}, instructorId={}, title={}",
+                lecture.getId(), instructor.getId(), lecture.getTitle());
         return LectureCreateResponse.from(lecture);
     }
 
