@@ -1,6 +1,7 @@
 package app_programming_development.Class.lecture.controller;
 
 import app_programming_development.Class.dto.lecture.request.LectureRequest;
+import app_programming_development.Class.dto.lecture.response.InstructorProfileResponse;
 import app_programming_development.Class.dto.lecture.response.LectureCreateResponse;
 import app_programming_development.Class.dto.lecture.response.LectureDetailResponse;
 import app_programming_development.Class.dto.lecture.response.LectureListDto;
@@ -51,6 +52,13 @@ public class LectureController {
     @Operation(summary = "강의 상세 조회", description = "강의 상세 조회 시 사용하는 API 입니다.")
     public ResponseEntity<ApiResponse<LectureDetailResponse>> getLecture(@PathVariable Long lectureId) {
         LectureDetailResponse result = lectureService.getLecture(lectureId);
+        return ResponseEntity.ok(ApiResponse.ok(result, "조회되었습니다."));
+    }
+
+    @GetMapping("/instructor/{instructorId}")
+    @Operation(summary = "강사 프로필 조회", description = "강사 ID로 프로필과 강의 목록을 조회합니다.")
+    public ResponseEntity<ApiResponse<InstructorProfileResponse>> getInstructorProfile(@PathVariable Long instructorId) {
+        InstructorProfileResponse result = lectureService.getInstructorProfile(instructorId);
         return ResponseEntity.ok(ApiResponse.ok(result, "조회되었습니다."));
     }
 }

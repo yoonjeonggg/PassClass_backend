@@ -37,6 +37,9 @@ public class ChapterProgress {
     @Column(name = "is_completed", nullable = false)
     private boolean isCompleted;
 
+    @Column(name = "watched_seconds", nullable = false)
+    private int watchedSeconds;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -50,9 +53,14 @@ public class ChapterProgress {
         this.user = user;
         this.chapter = chapter;
         this.isCompleted = false;
+        this.watchedSeconds = 0;
     }
 
     public void markCompleted() {
         this.isCompleted = true;
+    }
+
+    public void updateWatchedSeconds(int seconds) {
+        this.watchedSeconds = seconds;
     }
 }

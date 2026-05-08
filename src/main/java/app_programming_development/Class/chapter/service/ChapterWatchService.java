@@ -5,6 +5,8 @@ import app_programming_development.Class.chapter.entity.LectureChapters;
 import app_programming_development.Class.chapter.repository.ChapterProgressRepository;
 import app_programming_development.Class.chapter.repository.LectureChapterRepository;
 import app_programming_development.Class.dto.chapter.response.ChapterWatchResponse;
+import app_programming_development.Class.dto.chapter.response.LectureProgressResponse;
+import app_programming_development.Class.dto.chapter.response.MyChapterProgress;
 import app_programming_development.Class.enrollment.repository.EnrollmentRepository;
 import app_programming_development.Class.exceptions.forbidden.NotEnrolledException;
 import app_programming_development.Class.exceptions.notFound.ChapterNotFoundException;
@@ -13,6 +15,9 @@ import app_programming_development.Class.user.entity.Users;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +50,50 @@ public class ChapterWatchService {
                                 .build()
                 ));
 
-        return ChapterWatchResponse.of(chapter, progress.isCompleted());
+        return ChapterWatchResponse.of(chapter, progress.isCompleted(), progress.getWatchedSeconds());
+    }
+
+    @Transactional
+    public void saveProgress(Long chapterId, int watchedSeconds) {
+        Users currentUser = securityUtils.getCurrentUser();
+
+        LectureChapters chapter = lectureChapterRepository.findById(chapterId)
+                .orElseThrow(ChapterNotFoundException::new);
+
+        if (!enrollmentRepository.existsByUserIdAndLecturesId(
+                currentUser.getId(), chapter.getLectures().getId())) {
+            throw new NotEnrolledException();
+        }
+
+        ChapterProgress progress = chapterProgressRepository
+                .findByUserIdAndChapterId(currentUser.getId(), chapterId)
+                .orElseGet(() -> chapterProgressRepository.save(
+                        ChapterProgress.builder()
+                                .user(currentUser)
+                                .chapter(chapter)
+                                .build()
+                ));
+
+        progress.updateWatchedSeconds(watchedSeconds);
+    }
+
+    @Transactional(readOnly = true)
+    public LectureProgressResponse getMyProgress(Long lectureId) {
+        Users currentUser = securityUtils.getCurrentUser();
+
+        List<LectureChapters> allChapters = lectureChapterRepository.findByLectures_IdOrderByChapterOrderAsc(lectureId);
+        List<ChapterProgress> myProgress = chapterProgressRepository
+                .findByUser_IdAndChapter_Lectures_Id(currentUser.getId(), lectureId);
+
+        int totalCount = allChapters.size();
+        int completedCount = (int) myProgress.stream().filter(ChapterProgress::isCompleted).count();
+        int progressPercent = totalCount > 0 ? (completedCount * 100 / totalCount) : 0;
+
+        List<MyChapterProgress> chapters = myProgress.stream()
+                .map(MyChapterProgress::of)
+                .collect(Collectors.toList());
+
+        return new LectureProgressResponse(completedCount, totalCount, progressPercent, chapters);
     }
 
     @Transactional

@@ -12,14 +12,16 @@ public class ChapterWatchResponse {
     private String videoUrl;
     private Integer chapterOrder;
     private boolean completed;
+    private int watchedSeconds;
 
-    public static ChapterWatchResponse of(LectureChapters chapter, boolean completed) {
+    public static ChapterWatchResponse of(LectureChapters chapter, boolean completed, int watchedSeconds) {
         return ChapterWatchResponse.builder()
                 .id(chapter.getId())
                 .title(chapter.getTitle())
                 .videoUrl(chapter.getVideoUrl())
                 .chapterOrder(chapter.getChapterOrder())
                 .completed(completed)
+                .watchedSeconds(watchedSeconds)
                 .build();
     }
 }

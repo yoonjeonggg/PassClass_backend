@@ -7,6 +7,7 @@ import app_programming_development.Class.dto.certificate.response.CertificateInf
 import app_programming_development.Class.dto.chapter.response.ChapterDto;
 import app_programming_development.Class.dto.lecture.request.LectureRequest;
 import app_programming_development.Class.dto.lecture.response.InstructorDto;
+import app_programming_development.Class.dto.lecture.response.InstructorProfileResponse;
 import app_programming_development.Class.dto.lecture.response.LectureCreateResponse;
 import app_programming_development.Class.dto.lecture.response.LectureDetailResponse;
 import app_programming_development.Class.dto.lecture.response.LectureListDto;
@@ -16,12 +17,14 @@ import app_programming_development.Class.enums.UserRole;
 import app_programming_development.Class.exceptions.forbidden.TeacherRoleRequiredException;
 import app_programming_development.Class.exceptions.notFound.CertificateNotFoundException;
 import app_programming_development.Class.exceptions.notFound.LectureNotFoundException;
+import app_programming_development.Class.exceptions.notFound.UserNotFoundException;
 import app_programming_development.Class.lecture.entity.Lectures;
 import app_programming_development.Class.lecture.repository.LectureRepository;
 import app_programming_development.Class.like.repository.LectureLikeRepository;
 import app_programming_development.Class.review.repository.ReviewRepository;
 import app_programming_development.Class.security.SecurityUtils;
 import app_programming_development.Class.user.entity.Users;
+import app_programming_development.Class.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,12 +36,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class LectureService {
     private final LectureRepository lectureRepository;
+    private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final ReviewRepository reviewRepository;
     private final LectureLikeRepository lectureLikeRepository;
@@ -124,6 +129,7 @@ public class LectureService {
                 .toList();
 
         InstructorDto instructor = InstructorDto.builder()
+                .id(lecture.getInstructor().getId())
                 .nickname(lecture.getInstructor().getNickname())
                 .profileImage(lecture.getInstructor().getProfileUrl())
                 .build();
@@ -146,5 +152,32 @@ public class LectureService {
                         .name(lecture.getCertificates().getName())
                         .build())
                 .build();
+    }
+
+    public InstructorProfileResponse getInstructorProfile(Long instructorId) {
+        Users instructor = userRepository.findById(instructorId)
+                .orElseThrow(UserNotFoundException::new);
+
+        List<Lectures> lectures = lectureRepository.findByInstructor_IdOrderByCreatedAtDesc(instructorId);
+
+        long totalStudents = lectures.stream()
+                .mapToLong(l -> enrollmentRepository.countByLectures_Id(l.getId()))
+                .sum();
+
+        List<LectureListDto> lectureDtos = lectures.stream()
+                .map(l -> {
+                    Double avgRating = reviewRepository.getAverageRating(l.getId());
+                    return LectureListDto.from(l, avgRating != null ? avgRating : 0.0);
+                })
+                .collect(Collectors.toList());
+
+        return new InstructorProfileResponse(
+                instructor.getId(),
+                instructor.getNickname(),
+                instructor.getProfileUrl(),
+                lectures.size(),
+                totalStudents,
+                lectureDtos
+        );
     }
 }
