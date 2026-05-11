@@ -11,7 +11,9 @@ import java.util.List;
 public interface MockExamResultsRepository extends JpaRepository<MockExamResults, Long> {
     List<MockExamResults> findByUser_IdAndMockExams_Id(Long userId, Long mockExamId);
 
-    @Modifying
+    boolean existsByUser_IdAndMockExams_Id(Long userId, Long mockExamId);
+
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM MockExamResults r WHERE r.user.id = :userId AND r.mockExams.id = :mockExamId")
     void deleteByUser_IdAndMockExams_Id(@Param("userId") Long userId, @Param("mockExamId") Long mockExamId);
 }

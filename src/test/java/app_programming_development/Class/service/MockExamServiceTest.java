@@ -149,16 +149,54 @@ class MockExamServiceTest {
     // ── 모의고사 목록 조회 ─────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("모의고사 목록 조회 - 성공")
-    void getMockExams_성공() {
+    @DisplayName("모의고사 목록 조회 - 비로그인 사용자는 completed=false")
+    void getMockExams_비로그인_미완료() {
         given(mockExamRepository.findByCertificates_IdOrderByCreatedAtDesc(1L))
                 .willReturn(List.of(exam));
+        given(securityUtils.getCurrentUser()).willThrow(new RuntimeException("not authenticated"));
 
         List<MockExamListResponse> result = mockExamService.getMockExams(1L);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTitle()).isEqualTo("1회 모의고사");
         assertThat(result.get(0).getId()).isEqualTo(100L);
+        assertThat(result.get(0).isCompleted()).isFalse();
+        assertThat(result.get(0).getScore()).isNull();
+        then(mockExamResultsRepository).should(never()).existsByUser_IdAndMockExams_Id(any(), any());
+    }
+
+    @Test
+    @DisplayName("모의고사 목록 조회 - 로그인 사용자 미완료 시험은 completed=false")
+    void getMockExams_로그인_미완료시험() {
+        given(mockExamRepository.findByCertificates_IdOrderByCreatedAtDesc(1L))
+                .willReturn(List.of(exam));
+        given(securityUtils.getCurrentUser()).willReturn(student);
+        given(mockExamResultsRepository.existsByUser_IdAndMockExams_Id(3L, 100L)).willReturn(false);
+
+        List<MockExamListResponse> result = mockExamService.getMockExams(1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).isCompleted()).isFalse();
+        assertThat(result.get(0).getScore()).isNull();
+    }
+
+    @Test
+    @DisplayName("모의고사 목록 조회 - 로그인 사용자 완료 시험은 completed=true, 점수 포함")
+    void getMockExams_로그인_완료시험_점수표시() {
+        MockExamResults r1 = MockExamResults.builder().user(student).mockExams(exam).problems(problem1).selectedAnswer(1).isCorrect(true).build();
+        MockExamResults r2 = MockExamResults.builder().user(student).mockExams(exam).problems(problem2).selectedAnswer(1).isCorrect(false).build();
+
+        given(mockExamRepository.findByCertificates_IdOrderByCreatedAtDesc(1L))
+                .willReturn(List.of(exam));
+        given(securityUtils.getCurrentUser()).willReturn(student);
+        given(mockExamResultsRepository.existsByUser_IdAndMockExams_Id(3L, 100L)).willReturn(true);
+        given(mockExamResultsRepository.findByUser_IdAndMockExams_Id(3L, 100L))
+                .willReturn(List.of(r1, r2));
+
+        List<MockExamListResponse> result = mockExamService.getMockExams(1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).isCompleted()).isTrue();
+        assertThat(result.get(0).getScore()).isEqualTo(50);
     }
 
     @Test

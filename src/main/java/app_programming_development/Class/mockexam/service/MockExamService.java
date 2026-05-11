@@ -66,9 +66,26 @@ public class MockExamService {
     }
 
     public List<MockExamListResponse> getMockExams(Long certificateId) {
-        return mockExamRepository.findByCertificates_IdOrderByCreatedAtDesc(certificateId)
-                .stream()
-                .map(MockExamListResponse::from)
+        List<MockExams> exams = mockExamRepository.findByCertificates_IdOrderByCreatedAtDesc(certificateId);
+
+        Users currentUser = null;
+        try {
+            currentUser = securityUtils.getCurrentUser();
+        } catch (Exception ignored) {
+            // 비로그인 사용자는 완료 여부 없이 반환
+        }
+
+        final Users user = currentUser;
+        return exams.stream()
+                .map(exam -> {
+                    if (user == null || !mockExamResultsRepository.existsByUser_IdAndMockExams_Id(user.getId(), exam.getId())) {
+                        return MockExamListResponse.from(exam);
+                    }
+                    List<MockExamResults> results = mockExamResultsRepository.findByUser_IdAndMockExams_Id(user.getId(), exam.getId());
+                    int correct = (int) results.stream().filter(MockExamResults::isCorrect).count();
+                    int score = results.isEmpty() ? 0 : (int) Math.round((double) correct / results.size() * 100);
+                    return MockExamListResponse.from(exam, score);
+                })
                 .toList();
     }
 
