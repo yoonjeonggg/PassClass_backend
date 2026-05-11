@@ -118,6 +118,7 @@ public class ProblemService {
 
         boolean correct = problem.getCorrectAnswer() == request.getSelectedAnswer();
 
+        problemSolvesRepository.deleteByUser_IdAndProblems_Id(user.getId(), problemId);
         ProblemSolves solve = ProblemSolves.builder()
                 .user(user)
                 .problems(problem)
