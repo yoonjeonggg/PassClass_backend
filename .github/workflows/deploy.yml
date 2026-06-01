@@ -1,0 +1,63 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+
+      - name: Inject Firebase config
+        run: |
+          mkdir -p src/main/resources/firebase
+          echo "${{ secrets.FIREBASE_CONFIG_JSON }}" > src/main/resources/firebase/passclass-494fe-firebase-adminsdk-fbsvc-511a589c3b.json
+
+      - name: Build with Gradle (skip tests)
+        run: ./gradlew bootJar -x test
+
+      - name: Upload JAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          source: build/libs/*.jar
+          target: /home/${{ secrets.EC2_USERNAME }}/passclass/
+          strip_components: 2
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          script: |
+            PID=$(pgrep -f "passclass.*\.jar" || true)
+            if [ -n "$PID" ]; then
+              kill $PID
+              sleep 3
+            fi
+
+            cd /home/${{ secrets.EC2_USERNAME }}/passclass
+            JAR=$(ls *.jar | head -1)
+            nohup java -jar "$JAR" \
+              --spring.profiles.active=prod \
+              --DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              --JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              > /home/${{ secrets.EC2_USERNAME }}/passclass/app.log 2>&1 &
+
+            echo "Deployed: $JAR (PID: $!)"
