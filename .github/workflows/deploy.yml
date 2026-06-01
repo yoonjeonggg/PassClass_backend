@@ -29,15 +29,18 @@ jobs:
       - name: Build with Gradle (skip tests)
         run: ./gradlew bootJar -x test
 
-      - name: Upload JAR to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          password: ${{ secrets.EC2_PASSWORD }}
-          source: build/libs/*.jar
-          target: /home/${{ secrets.EC2_USERNAME }}/passclass/
-          strip_components: 2
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/passclass:latest
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -46,19 +49,18 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           password: ${{ secrets.EC2_PASSWORD }}
           script: |
-            PID=$(pgrep -f "passclass.*\.jar" || true)
-            if [ -n "$PID" ]; then
-              kill $PID
-              sleep 3
-            fi
+            docker pull ${{ secrets.DOCKER_USERNAME }}/passclass:latest
 
-            cd /home/${{ secrets.EC2_USERNAME }}/passclass
-            JAR=$(ls *.jar | head -1)
-            nohup java -jar "$JAR" \
-              --spring.profiles.active=prod \
-              --DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              --JWT_SECRET=${{ secrets.JWT_SECRET }} \
-              > /home/${{ secrets.EC2_USERNAME }}/passclass/app.log 2>&1 &
-            disown
+            docker stop passclass || true
+            docker rm passclass || true
 
-            echo "Deployed: $JAR (PID: $!)"
+            docker run -d \
+              --name passclass \
+              --restart unless-stopped \
+              -p 8009:8009 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              ${{ secrets.DOCKER_USERNAME }}/passclass:latest
+
+            echo "Deployed successfully"
